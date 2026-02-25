@@ -18,7 +18,10 @@ public class Cards {
 		this.account = account;
 		this.type = type;
 		this.expiration = (int)(Math.random() * (12) + 1) + "/" + (int)(Math.random() * (2040 - 2026 + 1) + 2026);
-		this.cardNum = "" + (int)(Math.random() * (9999 - 1000 + 1) + 1000) + (int)(Math.random() * (9999 - 1000 + 1) + 1000) + (int)(Math.random() * (9999 - 1000 + 1) + 1000) + (int)(Math.random() * (9999 - 1000 + 1) + 1000);
+		this.cardNum = "";
+		for (int i = 0; i < 16; i++) {
+			this.cardNum += (int)(Math.random() * 10);
+		}
 		this.CVV = (int)(Math.random() * (999 - 100 + 1) + 100);
 		user.cards.add(this);
 		account.cards.add(this);
