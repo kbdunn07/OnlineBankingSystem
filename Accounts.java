@@ -23,6 +23,19 @@ public class Accounts {
 		user.accounts.add(this);
 	}
 	
+	public void setBalance(double balance) {
+		this.balance = balance;
+	}
+	
+	public double getBalance() {
+		return this.balance;
+	}
+	
+	public String getAccName() {
+		return this.accName;
+	}
+	
+	
 	public String display() {
 		String result = "";
 		result += accName + " | " + user.getName() + "\nAccount Number: " + accNum + "\nRouting Number: " + routeNum + "\n$" + balance + "\n";
