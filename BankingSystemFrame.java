@@ -1,6 +1,9 @@
 package BankingPackage;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 
 //real coders don't use comments so they have no idea what they are coding when they come back
@@ -31,24 +34,28 @@ public class BankingSystemFrame extends JFrame {
         JPanel panel = new JPanel(new BorderLayout());
 
         JLabel title = new JLabel(acc.getAccName(), SwingConstants.CENTER);
-        title.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
+        title.setFont(new Font(Font.DIALOG, Font.BOLD, 24));
+        JButton backButton = new JButton("Back");
 
-        JLabel info = new JLabel(
-                "Account #: " + acc.accNum +
-                        " | Balance: $" + acc.getBalance(),
-                SwingConstants.CENTER
-        );
+        JLabel info = new JLabel("Account #: " + acc.accNum + " | Balance: $" + acc.getBalance(), SwingConstants.CENTER);
 
         JPanel top = new JPanel(new GridLayout(2, 1));
         top.add(title);
         top.add(info);
+        
 
         JPanel transactionsPanel = new JPanel();
         transactionsPanel.setLayout(new BoxLayout(transactionsPanel, BoxLayout.Y_AXIS));
 
         JScrollPane scroll = new JScrollPane(transactionsPanel);
+        
 
         JButton addTransaction = new JButton("Add Transaction");
+        
+        
+        backButton.addActionListener(e -> {
+        	mainCard.show(mainPanel, "user home");
+        });
 
         addTransaction.addActionListener(e -> {
             JPanel txPage = createAddTransactionPage(acc);
@@ -70,6 +77,9 @@ public class BankingSystemFrame extends JFrame {
         panel.add(top, BorderLayout.NORTH);
         panel.add(scroll, BorderLayout.CENTER);
         panel.add(addTransaction, BorderLayout.SOUTH);
+        
+        //panel.add(backButton); coming soon, screw borderlayouts.
+        
 
         mainPanel.add(panel, "account page");
         mainCard.show(mainPanel, "account page");
@@ -102,7 +112,6 @@ public class BankingSystemFrame extends JFrame {
             Users user = authenticate(usernameField.getText(), passwordField.getText());
 
             if (user != null) {
-                JOptionPane.showMessageDialog(this, "Welcome, " + user.getUsername() + "!");
                 currentUser = user;
                 mainPanel.add(createUserHomePage(), "user home");
                 mainCard.show(mainPanel, "user home");
@@ -120,7 +129,7 @@ public class BankingSystemFrame extends JFrame {
         layout.insets = new Insets(10, 10, 10, 10);
         layout.fill = GridBagConstraints.HORIZONTAL;
 
-        header.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 28));
+        header.setFont(new Font(Font.DIALOG, Font.BOLD, 28));
         header.setForeground(new Color(0, 0, 140));
         header.setHorizontalAlignment(SwingConstants.CENTER);
 
@@ -177,7 +186,7 @@ public class BankingSystemFrame extends JFrame {
             String password = newPassword.getText();
 
             if (username.isEmpty() || password.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Please enter all fields!");
+                JOptionPane.showMessageDialog(this, "Please enter all fields.");
                 return;
             }
 
@@ -206,7 +215,7 @@ public class BankingSystemFrame extends JFrame {
 
         JLabel header = new JLabel("Create Account");
 
-        header.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 28));
+        header.setFont(new Font(Font.DIALOG, Font.BOLD, 28));
         header.setForeground(new Color(0, 0, 140));
         header.setHorizontalAlignment(SwingConstants.CENTER);
 
@@ -254,7 +263,7 @@ public class BankingSystemFrame extends JFrame {
         JPanel panel = new JPanel(new BorderLayout());
 
         JLabel header = new JLabel();
-        header.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
+        header.setFont(new Font(Font.DIALOG, Font.BOLD, 24));
         header.setForeground(new Color(0, 0, 140));
         header.setHorizontalAlignment(SwingConstants.CENTER);
 
@@ -264,9 +273,14 @@ public class BankingSystemFrame extends JFrame {
         JScrollPane scrollPane = new JScrollPane(accountsPanel);
 
         JButton createAccountButton = new JButton("Create New Account");
+        JButton backButton = new JButton("Back");
 
         createAccountButton.addActionListener(e -> {
             mainCard.show(mainPanel, "create account from home");
+        });
+        
+        backButton.addActionListener(e -> {
+        	mainCard.show(mainPanel,  "login");
         });
 
         if (currentUser != null) {
@@ -275,7 +289,8 @@ public class BankingSystemFrame extends JFrame {
             if (currentUser.getAccounts().isEmpty()) {
                 JLabel empty = new JLabel("No accounts found.");
                 empty.setAlignmentX(Component.CENTER_ALIGNMENT);
-                accountsPanel.add(empty);
+                accountsPanel.setLayout(new BorderLayout());
+                accountsPanel.add(empty, BorderLayout.NORTH);
             } else {
                 for (Accounts acc : currentUser.getAccounts()) {
 
@@ -288,8 +303,8 @@ public class BankingSystemFrame extends JFrame {
                     ));
                     card.setPreferredSize(new Dimension(120, 100));
 
-                    card.addMouseListener(new java.awt.event.MouseAdapter() {
-                        public void mouseClicked(java.awt.event.MouseEvent e) {
+                    card.addMouseListener(new MouseAdapter() {
+                        public void mouseClicked(MouseEvent e) {
                             openAccountPage(acc);
                         }
                     });
@@ -314,6 +329,7 @@ public class BankingSystemFrame extends JFrame {
 
         if (currentUser != null) {
             buttonPanel.add(createAccountButton);
+            buttonPanel.add(backButton);
         }
 
         panel.add(buttonPanel, BorderLayout.SOUTH);
@@ -337,7 +353,7 @@ public class BankingSystemFrame extends JFrame {
         layout.fill = GridBagConstraints.HORIZONTAL;
 
         JLabel header = new JLabel("Add Transaction");
-        header.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
+        header.setFont(new Font(Font.DIALOG, Font.BOLD, 24));
         header.setHorizontalAlignment(SwingConstants.CENTER);
 
         layout.gridx = 0;
@@ -369,12 +385,10 @@ public class BankingSystemFrame extends JFrame {
                 if ((type.equalsIgnoreCase("Withdrawal") || type.equalsIgnoreCase("Purchase"))
                         && amount > acc.getBalance()) {
 
-                    JOptionPane.showMessageDialog(this, "Insufficient funds.");
+                    JOptionPane.showMessageDialog(this, "Not enough funds brokie.");
                     return;
                 }
                 new Transactions(amount, acc, type, null);
-
-                JOptionPane.showMessageDialog(this, "Transaction added!");
 
                 openAccountPage(acc);
 
@@ -415,7 +429,7 @@ public class BankingSystemFrame extends JFrame {
         layout.fill = GridBagConstraints.HORIZONTAL;
 
         JLabel header = new JLabel("Create Bank Account");
-        header.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 28));
+        header.setFont(new Font(Font.DIALOG, Font.BOLD, 28));
         header.setForeground(new Color(0, 0, 140));
         header.setHorizontalAlignment(SwingConstants.CENTER);
 
@@ -482,7 +496,7 @@ public class BankingSystemFrame extends JFrame {
 
         BankingSystemFrame mainFrame = new BankingSystemFrame();
         mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        mainFrame.setSize(600, 600);
+        mainFrame.setSize(600, 680);
         mainFrame.setVisible(true);
 
     }
