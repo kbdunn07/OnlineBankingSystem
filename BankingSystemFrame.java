@@ -1,4 +1,4 @@
-package BankingPackage;
+package javaPackage;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
@@ -60,8 +60,26 @@ public class BankingSystemFrame extends JFrame {
         cardsPanel.setLayout(new BoxLayout(cardsPanel, BoxLayout.Y_AXIS));
 
         for (Cards c : acc.cards) {
+        	
+        	/*
             JLabel cardLabel = new JLabel("Card: " + c.getCardNumber() + " | CVV: " + c.getCVV() + " | Expiration: " + c.getExpiration());
             cardsPanel.add(cardLabel);
+            */
+        	
+        	JPanel card = new JPanel();
+        	card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        	card.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createTitledBorder(c.type),
+                    BorderFactory.createEmptyBorder(5,10,5,10)
+            ));
+        	card.setPreferredSize(new Dimension(120, 100));
+        	
+        	card.add(new JLabel("Card Number: " + c.cardNum));
+        	card.add(new JLabel("CVV: " + c.CVV));
+        	card.add(new JLabel("Expiration: " + c.expiration));
+        	cardsPanel.add(card);
+        	
+        	/// for future Kyler, add preferred column count, as well as set scrollpane to exact preferred dimensionA
         }
 
         JScrollPane cardScroll = new JScrollPane(cardsPanel);
