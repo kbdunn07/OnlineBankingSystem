@@ -1,7 +1,6 @@
 package BankingPackage;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.MouseListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
@@ -35,33 +34,15 @@ public class BankingSystemFrame extends JFrame {
 
         JLabel title = new JLabel(acc.getAccName(), SwingConstants.CENTER);
         title.setFont(new Font(Font.DIALOG, Font.BOLD, 24));
-        JButton backButton = new JButton("Back");
 
         JLabel info = new JLabel("Account #: " + acc.accNum + " | Balance: $" + acc.getBalance(), SwingConstants.CENTER);
 
         JPanel top = new JPanel(new GridLayout(2, 1));
         top.add(title);
         top.add(info);
-        
 
         JPanel transactionsPanel = new JPanel();
         transactionsPanel.setLayout(new BoxLayout(transactionsPanel, BoxLayout.Y_AXIS));
-
-        JScrollPane scroll = new JScrollPane(transactionsPanel);
-        
-
-        JButton addTransaction = new JButton("Add Transaction");
-        
-        
-        backButton.addActionListener(e -> {
-        	mainCard.show(mainPanel, "user home");
-        });
-
-        addTransaction.addActionListener(e -> {
-            JPanel txPage = createAddTransactionPage(acc);
-            mainPanel.add(txPage, "add transaction");
-            mainCard.show(mainPanel, "add transaction");
-        });
 
         for (Transactions t : acc.transactions) {
             JLabel label;
@@ -70,21 +51,128 @@ public class BankingSystemFrame extends JFrame {
             } else {
                 label = new JLabel(t.type + ": -$" + t.amount);
             }
-
             transactionsPanel.add(label);
         }
 
+        JScrollPane transactionScroll = new JScrollPane(transactionsPanel);
+
+        JPanel cardsPanel = new JPanel();
+        cardsPanel.setLayout(new BoxLayout(cardsPanel, BoxLayout.Y_AXIS));
+
+        for (Cards c : acc.cards) {
+            JLabel cardLabel = new JLabel("Card: " + c.getCardNumber() + " | CVV: " + c.getCVV() + " | Expiration: " + c.getExpiration());
+            cardsPanel.add(cardLabel);
+        }
+
+        JScrollPane cardScroll = new JScrollPane(cardsPanel);
+
+        JPanel centerPanel = new JPanel();
+        centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
+
+        JLabel transactionsHeader = new JLabel("Transactions");
+        transactionsHeader.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        JLabel cardsHeader = new JLabel("Cards");
+        cardsHeader.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        centerPanel.add(transactionsHeader);
+        centerPanel.add(transactionScroll);
+        centerPanel.add(cardsHeader);
+        centerPanel.add(cardScroll);
+
+        JButton backButton = new JButton("Back");
+        JButton addTransaction = new JButton("Add Transaction");
+        JButton addCard = new JButton("Add Card");
+
+        backButton.addActionListener(e -> {
+            mainCard.show(mainPanel, "user home");
+        });
+
+        addTransaction.addActionListener(e -> {
+            JPanel txPage = createAddTransactionPage(acc);
+            mainPanel.add(txPage, "add transaction");
+            mainCard.show(mainPanel, "add transaction");
+        });
+
+        addCard.addActionListener(e -> {
+            JPanel cardPage = createAddCardPage(acc);
+
+            mainPanel.add(cardPage, "add card");
+            mainCard.show(mainPanel, "add card");
+
+            mainPanel.revalidate();
+            mainPanel.repaint();
+        });
+
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        bottomPanel.add(backButton);
+        bottomPanel.add(addTransaction);
+        bottomPanel.add(addCard);
+
         panel.add(top, BorderLayout.NORTH);
-        panel.add(scroll, BorderLayout.CENTER);
-        panel.add(addTransaction, BorderLayout.SOUTH);
-        
-        //panel.add(backButton); coming soon, screw borderlayouts.
-        
+        panel.add(centerPanel, BorderLayout.CENTER);
+        panel.add(bottomPanel, BorderLayout.SOUTH);
 
         mainPanel.add(panel, "account page");
         mainCard.show(mainPanel, "account page");
+        mainCard.show(mainPanel, "account page");
     }
+    private JPanel createAddCardPage(Accounts acc) {
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints layout = new GridBagConstraints();
 
+        String[] cardTypes = {"Credit", "Debit"};
+        JComboBox<String> typeDropdown = new JComboBox<>(cardTypes);
+
+        JButton createButton = new JButton("Create Card");
+        JButton backButton = new JButton("Back");
+
+        layout.insets = new Insets(10, 10, 10, 10);
+        layout.fill = GridBagConstraints.HORIZONTAL;
+
+        JLabel header = new JLabel("Add Card");
+        header.setFont(new Font(Font.DIALOG, Font.BOLD, 24));
+        header.setHorizontalAlignment(SwingConstants.CENTER);
+
+        layout.gridx = 0;
+        layout.gridy = 0;
+        layout.gridwidth = 2;
+        panel.add(header, layout);
+
+        layout.gridwidth = 1;
+
+        layout.gridx = 0;
+        layout.gridy = 1;
+        layout.anchor = GridBagConstraints.EAST;
+        panel.add(new JLabel("Card Type:"), layout);
+
+        layout.gridx = 1;
+        layout.anchor = GridBagConstraints.WEST;
+        panel.add(typeDropdown, layout);
+
+        layout.gridy = 2;
+
+        layout.gridx = 0;
+        layout.anchor = GridBagConstraints.EAST;
+        panel.add(backButton, layout);
+
+        layout.gridx = 1;
+        layout.anchor = GridBagConstraints.WEST;
+        panel.add(createButton, layout);
+
+        backButton.addActionListener(e -> {
+            openAccountPage(acc);
+        });
+
+        createButton.addActionListener(e -> {
+            String type = (String) typeDropdown.getSelectedItem();
+            Cards newCard = new Cards(currentUser, acc, type);
+            acc.cards.add(newCard);
+            openAccountPage(acc);
+        });
+
+        return panel;
+    }
     private Users authenticate(String username, String password) {
         for (Users user : users) {
             if (user.getUsername().equals(username) &&
@@ -278,9 +366,9 @@ public class BankingSystemFrame extends JFrame {
         createAccountButton.addActionListener(e -> {
             mainCard.show(mainPanel, "create account from home");
         });
-        
+
         backButton.addActionListener(e -> {
-        	mainCard.show(mainPanel,  "login");
+            mainCard.show(mainPanel,  "login");
         });
 
         if (currentUser != null) {
