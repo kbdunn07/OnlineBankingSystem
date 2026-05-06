@@ -1,9 +1,12 @@
-package javaPackage;
+package BankingPackage;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 
 //real coders don't use comments so they have no idea what they are coding when they come back
 
@@ -14,6 +17,7 @@ public class BankingSystemFrame extends JFrame {
     private ArrayList<Users> users = new ArrayList<>();
     private Users currentUser;
 
+
     public BankingSystemFrame() {
         setTitle("Banking System");
 
@@ -22,8 +26,9 @@ public class BankingSystemFrame extends JFrame {
 
         mainPanel.add(createLoginPage(), "login");
         mainPanel.add(createAccountPage(), "create");
-        //mainPanel.add(createUserHomePage(), "user home");
         mainPanel.add(createLoggedInAccountPage(), "create account from home");
+
+
 
         add(mainPanel);
     }
@@ -44,7 +49,9 @@ public class BankingSystemFrame extends JFrame {
         JPanel transactionsPanel = new JPanel();
         transactionsPanel.setLayout(new BoxLayout(transactionsPanel, BoxLayout.Y_AXIS));
 
-        for (Transactions t : acc.transactions) {
+        ArrayList<Transactions> transactions = loadTransactionsFromDB(acc.getId());
+
+        for (Transactions t : transactions) {
             JLabel label;
             if (t.type.equalsIgnoreCase("Deposit")) {
                 label = new JLabel("Deposit: +$" + t.amount);
@@ -55,34 +62,38 @@ public class BankingSystemFrame extends JFrame {
         }
 
         JScrollPane transactionScroll = new JScrollPane(transactionsPanel);
+        transactionScroll.setPreferredSize(new Dimension(500, 200));
 
         JPanel cardsPanel = new JPanel();
-        cardsPanel.setLayout(new BoxLayout(cardsPanel, BoxLayout.Y_AXIS));
+        cardsPanel.setLayout(new GridLayout(0, 3, 10, 10));
 
-        for (Cards c : acc.cards) {
-        	
+        ArrayList<Cards> cards = loadCardsFromDB(acc.getId());
+
+        for (Cards c : cards) {
+
         	/*
             JLabel cardLabel = new JLabel("Card: " + c.getCardNumber() + " | CVV: " + c.getCVV() + " | Expiration: " + c.getExpiration());
             cardsPanel.add(cardLabel);
             */
-        	
-        	JPanel card = new JPanel();
-        	card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
-        	card.setBorder(BorderFactory.createCompoundBorder(
+
+            JPanel card = new JPanel();
+            card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+            card.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createTitledBorder(c.type),
                     BorderFactory.createEmptyBorder(5,10,5,10)
             ));
-        	card.setPreferredSize(new Dimension(120, 100));
-        	
-        	card.add(new JLabel("Card Number: " + c.cardNum));
-        	card.add(new JLabel("CVV: " + c.CVV));
-        	card.add(new JLabel("Expiration: " + c.expiration));
-        	cardsPanel.add(card);
-        	
-        	/// for future Kyler, add preferred column count, as well as set scrollpane to exact preferred dimensionA
+            card.setPreferredSize(new Dimension(120, 100));
+
+            card.add(new JLabel("Card Number: " + c.cardNum));
+            card.add(new JLabel("CVV: " + c.CVV));
+            card.add(new JLabel("Expiration: " + c.expiration));
+            cardsPanel.add(card);
+
+            /// for future Kyler, add preferred column count, as well as set scrollpane to exact preferred dimensionA
         }
 
         JScrollPane cardScroll = new JScrollPane(cardsPanel);
+        cardScroll.setPreferredSize(new Dimension(500, 200));
 
         JPanel centerPanel = new JPanel();
         centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
@@ -133,7 +144,6 @@ public class BankingSystemFrame extends JFrame {
 
         mainPanel.add(panel, "account page");
         mainCard.show(mainPanel, "account page");
-        mainCard.show(mainPanel, "account page");
     }
     private JPanel createAddCardPage(Accounts acc) {
         JPanel panel = new JPanel(new GridBagLayout());
@@ -183,26 +193,158 @@ public class BankingSystemFrame extends JFrame {
         });
 
         createButton.addActionListener(e -> {
-            String type = (String) typeDropdown.getSelectedItem();
-            Cards newCard = new Cards(currentUser, acc, type);
-            acc.cards.add(newCard);
-            openAccountPage(acc);
+
+            try {
+                String type = (String) typeDropdown.getSelectedItem();
+
+                Cards newCard = new Cards(currentUser, acc, type);
+
+                Connection conn = Database.connect();
+
+                String sql = "INSERT INTO cards (account_id, user_id, type, card_number, cvv, expiration) VALUES (?, ?, ?, ?, ?, ?)";
+
+                PreparedStatement stmt = conn.prepareStatement(sql);
+
+                stmt.setInt(1, acc.getId());
+                stmt.setInt(2, currentUser.getId());
+                stmt.setString(3, newCard.type);
+                stmt.setString(4, newCard.cardNum);
+                stmt.setInt(5, newCard.CVV);
+                stmt.setString(6, newCard.expiration);
+
+                stmt.executeUpdate();
+
+                JOptionPane.showMessageDialog(this, "Card created!");
+
+                openAccountPage(acc);
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(this, "Card creation failed.");
+            }
         });
 
         return panel;
     }
     private Users authenticate(String username, String password) {
-        for (Users user : users) {
-            if (user.getUsername().equals(username) &&
-                    user.getPassword().equals(password)) {
-                return user;
+        try {
+            Connection conn = Database.connect();
+
+            String sql = "SELECT * FROM users WHERE username=? AND password=?";
+            PreparedStatement stmt = conn.prepareStatement(sql);
+
+            stmt.setString(1, username);
+            stmt.setString(2, password);
+
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                int id = rs.getInt("id");
+                return new Users(id, username, password);
             }
+
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+
         return null;
+    }
+
+    private ArrayList<Cards> loadCardsFromDB(int accountId) {
+
+        ArrayList<Cards> list = new ArrayList<>();
+
+        try {
+
+            Connection conn = Database.connect();
+
+            String sql = "SELECT * FROM cards WHERE account_id=?";
+            PreparedStatement stmt = conn.prepareStatement(sql);
+
+            stmt.setInt(1, accountId);
+
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+
+                String type = rs.getString("type");
+                String cardNum = rs.getString("card_number");
+                int cvv = rs.getInt("cvv");
+                String expiration = rs.getString("expiration");
+
+                Cards c = new Cards(type, cardNum, cvv, expiration);
+
+                list.add(c);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return list;
+    }
+
+    private ArrayList<Transactions> loadTransactionsFromDB(int accountId) {
+        ArrayList<Transactions> list = new ArrayList<>();
+
+        try {
+            Connection conn = Database.connect();
+
+            String sql = "SELECT * FROM transactions WHERE account_id=?";
+            PreparedStatement stmt = conn.prepareStatement(sql);
+
+            stmt.setInt(1, accountId);
+
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+
+                double amount = rs.getDouble("amount");
+                String type = rs.getString("type");
+
+                Transactions t = new Transactions(amount, type);
+
+                list.add(t);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return list;
+    }
+
+    private ArrayList<Accounts> loadAccountsFromDB(int userId) {
+        ArrayList<Accounts> list = new ArrayList<>();
+
+        try {
+            Connection conn = Database.connect();
+
+            String sql = "SELECT * FROM accounts WHERE user_id=?";
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt.setInt(1, userId);
+
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                int id = rs.getInt("id");
+                String name = rs.getString("acc_name");
+                double balance = rs.getDouble("balance");
+
+                Accounts acc = new Accounts(id, currentUser, name, balance);
+                list.add(acc);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return list;
     }
 
     private JPanel createLoginPage() {
         JPanel panel = new JPanel(new GridBagLayout());
+
         GridBagConstraints layout = new GridBagConstraints();
 
         JTextField usernameField = new JTextField(15);
@@ -219,6 +361,7 @@ public class BankingSystemFrame extends JFrame {
 
             if (user != null) {
                 currentUser = user;
+
                 mainPanel.add(createUserHomePage(), "user home");
                 mainCard.show(mainPanel, "user home");
             } else {
@@ -303,8 +446,23 @@ public class BankingSystemFrame extends JFrame {
                 }
             }
 
-            users.add(new Users(username, password));
-            JOptionPane.showMessageDialog(this, "Account has been created.");
+            try {
+                Connection conn = Database.connect();
+
+                String sql = "INSERT INTO users (username, password) VALUES (?, ?)";
+                PreparedStatement stmt = conn.prepareStatement(sql);
+
+                stmt.setString(1, username);
+                stmt.setString(2, password);
+
+                stmt.executeUpdate();
+
+                JOptionPane.showMessageDialog(this, "Account has been created.");
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+
             created = true;
 
             if (created) {
@@ -392,13 +550,15 @@ public class BankingSystemFrame extends JFrame {
         if (currentUser != null) {
             header.setText("Welcome, " + currentUser.getUsername());
 
-            if (currentUser.getAccounts().isEmpty()) {
+            ArrayList<Accounts> accounts = loadAccountsFromDB(currentUser.getId());
+
+            if (accounts.isEmpty()) {
                 JLabel empty = new JLabel("No accounts found.");
                 empty.setAlignmentX(Component.CENTER_ALIGNMENT);
                 accountsPanel.setLayout(new BorderLayout());
                 accountsPanel.add(empty, BorderLayout.NORTH);
             } else {
-                for (Accounts acc : currentUser.getAccounts()) {
+                for (Accounts acc : accounts) {
 
                     JPanel card = new JPanel();
                     card.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -417,7 +577,6 @@ public class BankingSystemFrame extends JFrame {
 
                     card.add(new JLabel("Account #: " + acc.accNum));
                     card.add(new JLabel("Routing #: " + acc.routeNum));
-                    card.add(new JLabel("Name: " + acc.getAccName()));
                     card.add(new JLabel("Balance: $" + acc.getBalance()));
 
                     accountsPanel.add(card);
@@ -494,7 +653,43 @@ public class BankingSystemFrame extends JFrame {
                     JOptionPane.showMessageDialog(this, "Not enough funds brokie.");
                     return;
                 }
-                new Transactions(amount, acc, type, null);
+                try {
+                    Connection conn = Database.connect();
+
+                    // 1. insert transaction
+                    String sql = "INSERT INTO transactions (account_id, card_id, type, amount) VALUES (?, ?, ?, ?)";
+                    PreparedStatement stmt = conn.prepareStatement(sql);
+
+                    stmt.setInt(1, acc.getId());
+                    stmt.setObject(2, null); // no card yet
+                    stmt.setString(3, type);
+                    stmt.setDouble(4, amount);
+
+                    stmt.executeUpdate();
+
+                    // 2. update account balance
+                    if (type.equalsIgnoreCase("Deposit")) {
+                        acc.setBalance(acc.getBalance() + amount);
+                    } else {
+                        acc.setBalance(acc.getBalance() - amount);
+                    }
+
+                    String update = "UPDATE accounts SET balance=? WHERE id=?";
+                    PreparedStatement stmt2 = conn.prepareStatement(update);
+
+                    stmt2.setDouble(1, acc.getBalance());
+                    stmt2.setInt(2, acc.getId());
+
+                    stmt2.executeUpdate();
+
+                    JOptionPane.showMessageDialog(this, "Transaction successful!");
+
+                    openAccountPage(acc);
+
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(this, "Transaction failed.");
+                }
 
                 openAccountPage(acc);
 
@@ -569,8 +764,17 @@ public class BankingSystemFrame extends JFrame {
                 double balance = Double.parseDouble(balanceField.getText());
 
                 if (currentUser != null) {
-                    Accounts acc = new Accounts(currentUser, name, balance);
-                    currentUser.addAccount(acc);
+                    Connection conn = Database.connect();
+
+                    String sql = "INSERT INTO accounts (user_id, acc_name, balance) VALUES (?, ?, ?)";
+                    PreparedStatement stmt = conn.prepareStatement(sql);
+
+                    stmt.setInt(1, currentUser.getId());
+                    stmt.setString(2, name);
+                    stmt.setDouble(3, balance);
+
+                    stmt.executeUpdate();
+
                     accountNameField.setText("");
                     balanceField.setText("");
                 }
