@@ -6,6 +6,11 @@ public class Transactions {
     Accounts account;
     Cards card;
 
+    public Transactions(double amount, String type) {
+        this.amount = amount;
+        this.type = type;
+    }
+
     public Transactions(double amount, Accounts account, String type, Cards card) {
         this.amount = amount;
         this.type = type;
