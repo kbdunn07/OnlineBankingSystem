@@ -10,6 +10,13 @@ public class Cards {
     int CVV;
     ArrayList<Transactions> transactions = new ArrayList<>();
 
+    public Cards(String type, String cardNum, int CVV, String expiration) {
+        this.type = type;
+        this.cardNum = cardNum;
+        this.CVV = CVV;
+        this.expiration = expiration;
+    }
+
     public Cards(Users user, Accounts account, String type) {
         this.user = user;
         this.account = account;
