@@ -7,10 +7,20 @@ public class Accounts {
     String accName;
     int accNum;
     int routeNum;
+    int id;
     double balance;
     ArrayList<Cards> cards = new ArrayList<>();
     ArrayList<Transactions> transactions = new ArrayList<>();
 
+    public Accounts(int id, Users user, String accName, double balance) {
+        this.id = id;
+        this.user = user;
+        this.accName = accName;
+        this.balance = balance;
+        this.accNum = (int)(Math.random() * (999999999 + 1));
+        this.routeNum = (int)(Math.random() * (999999999 + 1));
+    }
+    /*
     public Accounts(Users user, String accName, double balance) {
         this.user = user;
         this.accName = accName;
@@ -19,6 +29,8 @@ public class Accounts {
         this.routeNum = (int)(Math.random() * (999999999 + 1));
         //user.addAccount(this);
     }
+    */
+
 
     public void setBalance(double balance) {
         this.balance = balance;
@@ -30,6 +42,10 @@ public class Accounts {
 
     public String getAccName() {
         return this.accName;
+    }
+
+    public int getId() {
+        return id;
     }
 
 
