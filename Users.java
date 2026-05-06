@@ -5,12 +5,13 @@ import java.util.ArrayList;
 public class Users {
     String username;
     String password;
+    int id;
 
     ArrayList<Accounts> accounts = new ArrayList<>();
     ArrayList<Cards> cards = new ArrayList<>();
 
-    public Users(String username, String password) {
-
+    public Users(int id, String username, String password) {
+        this.id = id;
         this.username = username;
         this.password = password;
     }
@@ -21,6 +22,10 @@ public class Users {
 
     public void addAccount(Accounts account) {
         accounts.add(account);
+    }
+
+    public int getId() {
+        return id;
     }
 
     public String getUsername() {
